@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  createContext,
+  useContext,
+  useCallback,
+} from "react";
 import {
   Menu,
   X,
@@ -23,6 +30,8 @@ import {
   Stethoscope,
   ClipboardList,
   Zap,
+  Send,
+  Calendar,
 } from "lucide-react";
 
 // ---------- Design tokens ----------
@@ -45,6 +54,28 @@ const F = {
   display: "'Instrument Serif', 'Times New Roman', serif",
   body: "'DM Sans', system-ui, -apple-system, sans-serif",
 };
+
+// ---------- Reduced motion preference ----------
+function usePrefersReducedMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduce(mq.matches);
+    update();
+    mq.addEventListener ? mq.addEventListener("change", update) : mq.addListener(update);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener("change", update) : mq.removeListener(update);
+    };
+  }, []);
+  return reduce;
+}
+
+// ---------- Booking context ----------
+const BookingContext = createContext(() => {});
+function useBooking() {
+  return useContext(BookingContext);
+}
 
 // ---------- useInView (IntersectionObserver) ----------
 function useInView(options) {
@@ -70,14 +101,18 @@ function useInView(options) {
 
 function Reveal({ children, delay = 0, as: Tag = "div", className = "", style = {} }) {
   const [ref, inView] = useInView();
+  const reduceMotion = usePrefersReducedMotion();
+  const visible = reduceMotion || inView;
   return (
     <Tag
       ref={ref}
       className={className}
       style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? "translateY(0px)" : "translateY(28px)",
-        transition: `opacity 800ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, transform 800ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`,
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0px)" : "translateY(28px)",
+        transition: reduceMotion
+          ? "none"
+          : `opacity 800ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, transform 800ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`,
         ...style,
       }}
     >
@@ -146,7 +181,339 @@ function GlobalStyles() {
       ::-webkit-scrollbar-track { background: ${C.bg}; }
       ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 8px; }
       ::-webkit-scrollbar-thumb:hover { background: ${C.borderStrong}; }
+
+      /* Focus rings — keyboard a11y */
+      :focus-visible { outline: 2px solid ${C.accent}; outline-offset: 3px; border-radius: 6px; }
+
+      /* Respect users who prefer reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+          scroll-behavior: auto !important;
+        }
+        .mesh-a, .mesh-b, .pulse-dot { animation: none !important; }
+        html { scroll-behavior: auto; }
+      }
+
+      /* Modal */
+      @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes modal-rise { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      .modal-backdrop { animation: modal-fade 220ms ease-out; }
+      .modal-card { animation: modal-rise 320ms cubic-bezier(0.22,1,0.36,1); }
     `}</style>
+  );
+}
+
+// ---------- Booking Modal ----------
+//
+// This modal is intentionally backend-agnostic. Three easy ways to wire it up:
+//
+//   1) Formspree / Basin / Web3Forms — replace BOOKING_FORM_ENDPOINT below with
+//      your form's POST URL. No other code changes needed.
+//
+//   2) Cal.com / Calendly — replace the <form> in BookingModal with an iframe:
+//      <iframe src="https://cal.com/your-handle/practice-audit" ... />
+//      Delete the form state below.
+//
+//   3) Your own API — point BOOKING_FORM_ENDPOINT at your endpoint and adapt
+//      the JSON body in handleSubmit.
+//
+const BOOKING_FORM_ENDPOINT = ""; // e.g. "https://formspree.io/f/xxxxxxx"
+
+function BookingModal({ open, onClose }) {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    practice: "",
+    role: "Owner / Doctor",
+    phone: "",
+    notes: "",
+  });
+  const [status, setStatus] = useState("idle"); // idle | submitting | success | error
+  const [errorMsg, setErrorMsg] = useState("");
+  const dialogRef = useRef(null);
+  const firstFieldRef = useRef(null);
+
+  // Lock body scroll, focus first field, close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    setTimeout(() => firstFieldRef.current && firstFieldRef.current.focus(), 60);
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
+  // Reset back to idle a moment after closing
+  useEffect(() => {
+    if (open) return;
+    const t = setTimeout(() => {
+      setStatus("idle");
+      setErrorMsg("");
+    }, 400);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  const onChange = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("submitting");
+    setErrorMsg("");
+
+    if (!BOOKING_FORM_ENDPOINT) {
+      // Demo mode — pretend it worked. Wire up BOOKING_FORM_ENDPOINT to send for real.
+      await new Promise((r) => setTimeout(r, 700));
+      setStatus("success");
+      return;
+    }
+
+    try {
+      const res = await fetch(BOOKING_FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      setStatus("success");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err && err.message ? err.message : "Something went wrong.");
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="modal-backdrop fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      style={{ background: "rgba(5, 5, 5, 0.78)", backdropFilter: "blur(8px)" }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="booking-title"
+    >
+      <div
+        ref={dialogRef}
+        className="modal-card relative w-full max-w-lg rounded-2xl my-8 sm:my-0"
+        style={{
+          background: C.bgCard,
+          border: `1px solid ${C.borderStrong}`,
+          boxShadow: "0 30px 80px -20px rgba(0,0,0,0.7)",
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 p-7 pb-5">
+          <div>
+            <div
+              className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] mb-3"
+              style={{ background: C.accentSoft, color: C.accent }}
+            >
+              <Calendar size={12} /> Free Practice Audit · 30 min
+            </div>
+            <h2
+              id="booking-title"
+              className="font-display text-3xl sm:text-4xl leading-tight"
+              style={{ color: C.text }}
+            >
+              Let's find the time you're losing.
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{
+              border: `1px solid ${C.border}`,
+              color: C.textDim,
+              transition: "all 200ms ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = C.accent;
+              e.currentTarget.style.color = C.accent;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = C.border;
+              e.currentTarget.style.color = C.textDim;
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        {status === "success" ? (
+          <div className="px-7 pb-8">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ background: C.accentSoft }}
+            >
+              <Check size={22} color={C.accent} strokeWidth={2.5} />
+            </div>
+            <h3 className="font-display text-2xl mt-5" style={{ color: C.text }}>
+              You're on the list.
+            </h3>
+            <p className="text-base mt-2 leading-relaxed" style={{ color: C.textDim }}>
+              We'll reach out within one business day to schedule your 30-minute
+              audit. Check your inbox (and spam folder, just in case).
+            </p>
+            <button
+              onClick={onClose}
+              className="btn-ghost mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium"
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-7 pb-7">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Your name" htmlFor="bf-name">
+                <input
+                  id="bf-name"
+                  ref={firstFieldRef}
+                  required
+                  value={form.name}
+                  onChange={onChange("name")}
+                  placeholder="Dr. Lena Voss"
+                  autoComplete="name"
+                />
+              </Field>
+              <Field label="Email" htmlFor="bf-email">
+                <input
+                  id="bf-email"
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={onChange("email")}
+                  placeholder="you@practice.com"
+                  autoComplete="email"
+                />
+              </Field>
+              <Field label="Practice name" htmlFor="bf-practice">
+                <input
+                  id="bf-practice"
+                  required
+                  value={form.practice}
+                  onChange={onChange("practice")}
+                  placeholder="Voss Family Dental"
+                />
+              </Field>
+              <Field label="Your role" htmlFor="bf-role">
+                <select id="bf-role" value={form.role} onChange={onChange("role")}>
+                  {[
+                    "Owner / Doctor",
+                    "Practice Manager",
+                    "Operations / COO",
+                    "Front Desk Lead",
+                    "Other",
+                  ].map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Phone (optional)" htmlFor="bf-phone">
+                <input
+                  id="bf-phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={onChange("phone")}
+                  placeholder="(512) 555-0142"
+                  autoComplete="tel"
+                />
+              </Field>
+              <Field label="Biggest bottleneck (optional)" htmlFor="bf-notes" full>
+                <textarea
+                  id="bf-notes"
+                  rows={3}
+                  value={form.notes}
+                  onChange={onChange("notes")}
+                  placeholder="Tell us where the friction is — insurance, intake, no-shows, charting, etc."
+                />
+              </Field>
+            </div>
+
+            {status === "error" && (
+              <div
+                className="mt-5 px-4 py-3 rounded-lg text-sm"
+                style={{
+                  background: "rgba(220, 80, 50, 0.08)",
+                  border: "1px solid rgba(220, 80, 50, 0.35)",
+                  color: "#FFB199",
+                }}
+              >
+                Couldn't submit your request: {errorMsg}. Please try again or email
+                hello@pulseautomation.co.
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={status === "submitting"}
+              className="btn-primary mt-6 inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-full text-sm font-medium"
+              style={{ opacity: status === "submitting" ? 0.7 : 1 }}
+            >
+              {status === "submitting" ? (
+                "Sending…"
+              ) : (
+                <>
+                  Request my audit <Send size={14} strokeWidth={2.5} />
+                </>
+              )}
+            </button>
+
+            <p className="text-xs mt-4 text-center" style={{ color: C.textMuted }}>
+              No contracts. No obligation. We respond within one business day.
+            </p>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, htmlFor, children, full = false }) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className={"flex flex-col gap-1.5 " + (full ? "sm:col-span-2" : "")}
+    >
+      <span className="text-xs uppercase tracking-wider" style={{ color: C.textMuted }}>
+        {label}
+      </span>
+      {React.cloneElement(children, {
+        className:
+          (children.props.className || "") +
+          " w-full px-3.5 py-2.5 rounded-lg text-sm",
+        style: {
+          background: C.bg,
+          color: C.text,
+          border: `1px solid ${C.border}`,
+          outline: "none",
+          fontFamily: F.body,
+          ...(children.props.style || {}),
+        },
+        onFocus: (e) => {
+          e.currentTarget.style.borderColor = C.accent;
+          e.currentTarget.style.boxShadow = `0 0 0 3px ${C.accentSoft}`;
+        },
+        onBlur: (e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.boxShadow = "none";
+        },
+      })}
+    </label>
   );
 }
 
@@ -154,6 +521,7 @@ function GlobalStyles() {
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const openBooking = useBooking();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -211,12 +579,13 @@ function Nav() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          <a
-            href="#cta"
+          <button
+            type="button"
+            onClick={openBooking}
             className="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
           >
             Book a Call <ArrowUpRight size={14} strokeWidth={2.5} />
-          </a>
+          </button>
         </div>
 
         <button
@@ -246,13 +615,16 @@ function Nav() {
                 {l.label}
               </a>
             ))}
-            <a
-              href="#cta"
-              onClick={() => setOpen(false)}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                openBooking();
+              }}
               className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-medium mt-2"
             >
               Book a Call <ArrowUpRight size={14} strokeWidth={2.5} />
-            </a>
+            </button>
           </div>
         </div>
       )}
@@ -262,6 +634,7 @@ function Nav() {
 
 // ---------- Hero ----------
 function Hero() {
+  const openBooking = useBooking();
   return (
     <section id="top" className="relative overflow-hidden pt-32 lg:pt-44 pb-24 lg:pb-32">
       {/* Animated gradient mesh background */}
@@ -346,13 +719,14 @@ function Hero() {
 
         <Reveal delay={280}>
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <a
-              href="#cta"
+            <button
+              type="button"
+              onClick={openBooking}
               className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full font-medium text-base"
             >
               Book a Free Practice Audit
               <ArrowRight size={18} strokeWidth={2.5} />
-            </a>
+            </button>
             <a
               href="#process"
               className="btn-ghost inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full font-medium text-base"
@@ -830,6 +1204,7 @@ function Results() {
 
 // ---------- Pricing ----------
 function Pricing() {
+  const openBooking = useBooking();
   const tiers = [
     {
       name: "Starter",
@@ -959,15 +1334,16 @@ function Pricing() {
                   ))}
                 </ul>
 
-                <a
-                  href="#cta"
+                <button
+                  type="button"
+                  onClick={openBooking}
                   className={
                     "mt-8 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-medium " +
                     (t.popular ? "btn-primary" : "btn-ghost")
                   }
                 >
                   Get Started <ArrowRight size={14} strokeWidth={2.5} />
-                </a>
+                </button>
               </div>
             </Reveal>
           ))}
@@ -1097,6 +1473,7 @@ function FAQ() {
 
 // ---------- Final CTA ----------
 function FinalCTA() {
+  const openBooking = useBooking();
   return (
     <section id="cta" className="relative py-24 lg:py-36 overflow-hidden">
       {/* Accent background */}
@@ -1143,8 +1520,9 @@ function FinalCTA() {
         </Reveal>
         <Reveal delay={220}>
           <div className="mt-10 flex flex-col items-center gap-4">
-            <a
-              href="#top"
+            <button
+              type="button"
+              onClick={openBooking}
               className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full font-medium text-base"
               style={{
                 background: "#1A1407",
@@ -1162,7 +1540,7 @@ function FinalCTA() {
             >
               Book Your Free Practice Audit
               <ArrowRight size={18} strokeWidth={2.5} />
-            </a>
+            </button>
             <div className="text-sm" style={{ color: "#3A2D08" }}>
               No contracts. No obligation. Just clarity.
             </div>
@@ -1286,21 +1664,28 @@ function Footer() {
 
 // ---------- App ----------
 export default function PulseAutomation() {
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const openBooking = useCallback(() => setBookingOpen(true), []);
+  const closeBooking = useCallback(() => setBookingOpen(false), []);
+
   return (
-    <div className="font-body min-h-screen" style={{ background: C.bg, color: C.text }}>
-      <GlobalStyles />
-      <Nav />
-      <main>
-        <Hero />
-        <PainPoints />
-        <Services />
-        <Process />
-        <Results />
-        <Pricing />
-        <FAQ />
-        <FinalCTA />
-      </main>
-      <Footer />
-    </div>
+    <BookingContext.Provider value={openBooking}>
+      <div className="font-body min-h-screen" style={{ background: C.bg, color: C.text }}>
+        <GlobalStyles />
+        <Nav />
+        <main>
+          <Hero />
+          <PainPoints />
+          <Services />
+          <Process />
+          <Results />
+          <Pricing />
+          <FAQ />
+          <FinalCTA />
+        </main>
+        <Footer />
+        <BookingModal open={bookingOpen} onClose={closeBooking} />
+      </div>
+    </BookingContext.Provider>
   );
 }

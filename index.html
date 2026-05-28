@@ -2,14 +2,161 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary -->
+    <title>Pulse Automation — AI automation for healthcare &amp; dental practices</title>
     <meta
       name="description"
-      content="Pulse Automation — AI automation for healthcare and dental practices. Eliminate admin bottlenecks, cut overhead, and let your team focus on patient care."
+      content="We build AI-powered systems for healthcare and dental practices that eliminate admin bottlenecks, cut overhead, and let your team focus on patient care — not paperwork."
     />
+    <link rel="canonical" href="https://pulseautomation.co/" />
     <meta name="theme-color" content="#0A0A0A" />
-    <title>Pulse Automation — AI for healthcare practices</title>
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/favicon.svg" color="#FFB628" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pulse Automation" />
+    <meta property="og:url" content="https://pulseautomation.co/" />
+    <meta property="og:title" content="Pulse Automation — AI for healthcare &amp; dental practices" />
+    <meta
+      property="og:description"
+      content="Your practice runs on people. Let AI handle the rest. Eliminate admin bottlenecks. Cut overhead. Focus on patient care."
+    />
+    <meta property="og:image" content="https://pulseautomation.co/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Pulse Automation — AI automation for healthcare and dental practices" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Pulse Automation — AI for healthcare practices" />
+    <meta
+      name="twitter:description"
+      content="Your practice runs on people. Let AI handle the rest."
+    />
+    <meta name="twitter:image" content="https://pulseautomation.co/og-image.png" />
+    <meta name="twitter:image:alt" content="Pulse Automation" />
+
+    <!-- Robots -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+
+    <!-- Preconnect to Google Fonts (the component loads them inline) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- JSON-LD: Organization + ProfessionalService -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://pulseautomation.co/#organization",
+            "name": "Pulse Automation",
+            "url": "https://pulseautomation.co/",
+            "logo": "https://pulseautomation.co/apple-touch-icon.png",
+            "description": "AI automation agency for healthcare and dental practices.",
+            "email": "hello@pulseautomation.co",
+            "areaServed": "US",
+            "sameAs": []
+          },
+          {
+            "@type": "ProfessionalService",
+            "@id": "https://pulseautomation.co/#service",
+            "name": "Pulse Automation",
+            "url": "https://pulseautomation.co/",
+            "image": "https://pulseautomation.co/og-image.png",
+            "description": "AI-powered automation for healthcare and dental practices: patient intake, front desk AI, insurance verification, appointment recall, clinical documentation, and custom workflows.",
+            "priceRange": "$$",
+            "areaServed": "US",
+            "serviceType": [
+              "AI Automation",
+              "Healthcare Practice Workflow",
+              "Insurance Verification Automation",
+              "Clinical Documentation AI",
+              "Appointment Recall Automation"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://pulseautomation.co/#website",
+            "url": "https://pulseautomation.co/",
+            "name": "Pulse Automation",
+            "publisher": { "@id": "https://pulseautomation.co/#organization" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://pulseautomation.co/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "How long does it take to set up an automation?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Most builds ship in 2–4 weeks from kickoff. Simple front-desk automations can be live in under 10 days; integrations that touch your EHR or claims pipeline typically take the full 4 weeks because we do real testing against your data before flipping anything on."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do we need any technical knowledge on our end?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. You need a decision-maker who can answer questions about how your practice runs, and an admin who can grant access to your PMS or EHR. We handle every line of code, every integration, and every deployment."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What practice management systems and EHRs do you integrate with?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Dentrix, Eaglesoft, Open Dental, Curve, Epic, Athenahealth, NextGen, Kareo, DrChrono, eClinicalWorks, and most modern PMS/EHR platforms. If you're on something niche, we'll do a free integration scoping call before you sign anything."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is patient data safe? Are you HIPAA compliant?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. We sign a BAA before any build begins. Patient data is encrypted in transit and at rest, access is role-based and audited, and we never train AI models on your patient data."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What happens if something breaks?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "You have a real human on Slack and email during business hours, and a 24/7 monitoring system on every automation. The standard SLA is full restoration the same business day."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I cancel my retainer anytime?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Retainers are month-to-month with 30 days notice. The one-time build fee is yours — we won't disable anything you've paid to build."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do you measure ROI for our practice?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "During the audit we lock in a baseline (hours spent, no-show rate, verification turnaround, collection rates). Every quarter we report the delta in plain English."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

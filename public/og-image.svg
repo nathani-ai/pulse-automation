@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#F4EFE3" stroke-opacity="0.04" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glow1" cx="18%" cy="22%" r="55%">
+      <stop offset="0%" stop-color="#FFB628" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FFB628" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="92%" cy="92%" r="50%">
+      <stop offset="0%" stop-color="#FFB628" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#FFB628" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="vignette" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background layers -->
+  <rect width="1200" height="630" fill="#0A0A0A"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+  <rect width="1200" height="630" fill="url(#vignette)"/>
+
+  <!-- Logo lockup -->
+  <g transform="translate(80 80)">
+    <rect width="44" height="44" rx="10" fill="#FFB628"/>
+    <g transform="translate(10 10) scale(1.04)" fill="none" stroke="#1A1407" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </g>
+    <text x="60" y="32" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#F4EFE3" letter-spacing="-0.5">
+      Pulse <tspan fill="#FFB628">Automation</tspan>
+    </text>
+  </g>
+
+  <!-- Pill -->
+  <g transform="translate(80 200)">
+    <rect width="280" height="34" rx="17" fill="#FFB628" fill-opacity="0.12"/>
+    <circle cx="18" cy="17" r="3.5" fill="#FFB628"/>
+    <text x="32" y="22" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#FFB628" letter-spacing="0.5">
+      AI for healthcare &amp; dental practices
+    </text>
+  </g>
+
+  <!-- Main headline -->
+  <text x="80" y="350" font-size="84" fill="#F4EFE3" letter-spacing="-2">Your practice runs on people.</text>
+  <text x="80" y="455" font-size="84" font-style="italic" fill="#FFB628" letter-spacing="-2">Let AI handle the rest.</text>
+
+  <!-- Sub -->
+  <text x="80" y="525" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#B8B2A3">
+    Eliminate admin bottlenecks. Cut overhead. Focus on patient care.
+  </text>
+
+  <!-- URL bottom-left -->
+  <text x="80" y="585" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#807A6C" letter-spacing="1">
+    pulseautomation.co
+  </text>
+
+  <!-- Pulse line bottom-right -->
+  <g transform="translate(820 560)" fill="none" stroke="#FFB628" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85">
+    <path d="M0 25 L40 25 L60 5 L90 45 L120 -5 L150 25 L200 25 L220 15 L260 25"/>
+  </g>
+</svg>
